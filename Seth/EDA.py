@@ -43,7 +43,7 @@ histParams = {'kind': 'hist', 'legend': False, 'bins': 100}
 # ut.printNulls(data)
 
 data = ut.removeNullColumns(data, 95)
-
+data.to_csv('Dataset_Versions/' + 'Removed Nulls.csv')
 ut.plotDF(ut.getNullPercents(data), {'kind': 'barh', 'x': 'Column', 'y': 'Null Percent', 'legend': False},
           {
               'grid': None,
