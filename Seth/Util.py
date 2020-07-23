@@ -305,3 +305,4 @@ def appendColumns(columnList):
 
 def getColumnDiff(df1: pd.DataFrame, df2: pd.DataFrame):
     return [value for value in df1.columns if value not in df2.columns]
+

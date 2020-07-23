@@ -42,9 +42,10 @@ histParams = {'kind': 'hist', 'legend': False, 'bins': 100}
 #             'savefig': histDir + 'SalePrice.png'})
 # ut.printNulls(data)
 
-data = ut.removeNullColumns(data, 95)
-data.to_csv('Dataset_Versions/' + 'Removed Nulls.csv')
-ut.plotDF(ut.getNullPercents(data), {'kind': 'barh', 'x': 'Column', 'y': 'Null Percent', 'legend': False},
+noNulls = ut.removeNullColumns(data, 95)
+noNulls.to_csv('Dataset_Versions/' + 'Removed Nulls.csv')
+
+ut.plotDF(ut.getNullPercents(noNulls), {'kind': 'barh', 'x': 'Column', 'y': 'Null Percent', 'legend': False},
           {
               'grid': None,
               xTickFormatPercent: '',
@@ -53,4 +54,55 @@ ut.plotDF(ut.getNullPercents(data), {'kind': 'barh', 'x': 'Column', 'y': 'Null P
               'savefig': barDir + 'Null Percents.png'},
           removeOutliersBeforePlotting=False)
 
+cols = noNulls.columns
 
+#plot price range by brand
+
+
+brandPrices = noNulls.groupby('brand')[['prices.amountMin', 'prices.amountMax', 'prices.range']].mean().sort_values(by='prices.amountMax')
+priceRange = ['prices.amountMin', 'prices.amountMax']
+ut.plotDF(brandPrices[priceRange].iloc[0:20,]
+          , {'kind': 'barh', 'stacked':False},
+          {
+              'ylabel': 'Brand',
+              'xlabel': 'Average Price',
+              'title': 'Brands with Highest Prices',
+              'savefig': barDir + 'Brand Prices by Max Price.png'},
+          removeOutliersBeforePlotting=False)
+
+brandPrices.sort_values(by='prices.range', inplace=True, ascending=True)
+ut.plotDF(brandPrices[priceRange].iloc[-20:,]
+          , {'kind': 'barh', 'stacked':False},
+          {
+              'ylabel': 'Brand',
+              'xlabel': 'Average Price',
+              'title': 'Brands with Highest Price Variation',
+              'savefig': barDir + 'Brand Prices by Variation.png'},
+          removeOutliersBeforePlotting=False)
+
+
+merchantPrices = data.groupby('prices.merchant')[['prices.amountMin', 'prices.amountMax', 'prices.range']].mean()
+merchantPrices.sort_values(by='prices.amountMax', inplace=True, ascending=True)
+
+ut.plotDF(merchantPrices[priceRange].iloc[-20:,]
+          , {'kind': 'barh', 'stacked':False},
+          {
+              'ylabel': 'Store',
+              'xlabel': 'Average Price',
+              'title': 'Stores with Highest Prices',
+              'savefig': barDir + 'Store Prices by Max Price.png'},
+          removeOutliersBeforePlotting=False)
+
+merchantPrices.sort_values(by='prices.range', inplace=True, ascending=True)
+
+ut.plotDF(merchantPrices[priceRange].iloc[-20:,]
+          , {'kind': 'barh', 'stacked':False},
+          {
+              'ylabel': 'Store',
+              'xlabel': 'Average Price',
+              'title': 'Stores with highest Price Variation',
+              'savefig': barDir + 'Store Prices by Variation.png'},
+          removeOutliersBeforePlotting=False)
+
+
+print('finished')
