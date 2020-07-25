@@ -139,10 +139,10 @@ def removeEmpty(df: pd.DataFrame, printEmpty=False):
 
 
 def validateNum(s: pd.Series, type='positive', text='', fun=lambda x: x):
-    if type is 'positive':
+    if type == 'positive':
         fun = lambda x : x > 0
 
-    elif type is 'negative':
+    elif type == 'negative':
         fun = lambda x: x < 0
 
     validInts = len(s[fun(s)])
@@ -306,3 +306,7 @@ def appendColumns(columnList):
 def getColumnDiff(df1: pd.DataFrame, df2: pd.DataFrame):
     return [value for value in df1.columns if value not in df2.columns]
 
+def print_full(x):
+    pd.set_option('display.max_rows', len(x))
+    print(x)
+    pd.reset_option('display.max_rows')

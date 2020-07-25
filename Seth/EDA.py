@@ -3,9 +3,14 @@ import matplotlib.pyplot as plt
 import Seth.Util as ut
 import matplotlib as mpl
 import matplotlib.ticker as mtick
+import numpy as np
 
 data = pd.read_csv('Dataset_Versions/Original Dataset.csv')
-data['prices.range'] = data['prices.amountMax'] - data['prices.amountMin']
+data.rename(columns={'prices.amountMax': 'maxPrice', 'prices.amountMin': 'minPrice'}, inplace=True)
+
+data['priceRange'] = data['maxPrice'] - data['minPrice']
+data['priceRangePercent'] = data['minPrice'] / data['maxPrice']
+data['meanPrice'] = (data['maxPrice'] + data['minPrice'])/2
 
 
 histDir = 'Seth/Plots/'
@@ -57,10 +62,10 @@ ut.plotDF(ut.getNullPercents(noNulls), {'kind': 'barh', 'x': 'Column', 'y': 'Nul
 cols = noNulls.columns
 
 #plot price range by brand
+data = noNulls
 
-
-brandPrices = noNulls.groupby('brand')[['prices.amountMin', 'prices.amountMax', 'prices.range']].mean().sort_values(by='prices.amountMax')
-priceRange = ['prices.amountMin', 'prices.amountMax']
+brandPrices = data.groupby('brand')[['minPrice', 'maxPrice', 'priceRange', 'priceRangePercent']].mean().sort_values(by='maxPrice')
+priceRange = ['minPrice', 'maxPrice']
 ut.plotDF(brandPrices[priceRange].iloc[0:20,]
           , {'kind': 'barh', 'stacked':False},
           {
@@ -70,39 +75,95 @@ ut.plotDF(brandPrices[priceRange].iloc[0:20,]
               'savefig': barDir + 'Brand Prices by Max Price.png'},
           removeOutliersBeforePlotting=False)
 
-brandPrices.sort_values(by='prices.range', inplace=True, ascending=True)
-ut.plotDF(brandPrices[priceRange].iloc[-20:,]
-          , {'kind': 'barh', 'stacked':False},
+brandPrices.sort_values(by='priceRangePercent', inplace=True, ascending=False)
+#ut.print_full(brandPrices.iloc[-20:,])
+ut.plotDF(pd.DataFrame(brandPrices['priceRangePercent']).iloc[-20:,]
+          , {'kind': 'barh', 'legend': None},
           {
               'ylabel': 'Brand',
-              'xlabel': 'Average Price',
+              'xlabel': 'Ratio between minPrice and maxPrice',
               'title': 'Brands with Highest Price Variation',
               'savefig': barDir + 'Brand Prices by Variation.png'},
           removeOutliersBeforePlotting=False)
 
 
-merchantPrices = data.groupby('prices.merchant')[['prices.amountMin', 'prices.amountMax', 'prices.range']].mean()
-merchantPrices.sort_values(by='prices.amountMax', inplace=True, ascending=True)
+merchantPrices = data.groupby('prices.merchant')[['minPrice', 'maxPrice', 'priceRange', 'priceRangePercent']].mean()
+merchantPrices.sort_values(by='maxPrice', inplace=True, ascending=True)
 
 ut.plotDF(merchantPrices[priceRange].iloc[-20:,]
           , {'kind': 'barh', 'stacked':False},
           {
-              'ylabel': 'Store',
+              'ylabel': 'Merchant',
               'xlabel': 'Average Price',
-              'title': 'Stores with Highest Prices',
+              'title': 'Merchants with Highest Prices',
               'savefig': barDir + 'Store Prices by Max Price.png'},
           removeOutliersBeforePlotting=False)
 
-merchantPrices.sort_values(by='prices.range', inplace=True, ascending=True)
+merchantPrices.sort_values(by='priceRangePercent', inplace=True, ascending=False)
 
-ut.plotDF(merchantPrices[priceRange].iloc[-20:,]
-          , {'kind': 'barh', 'stacked':False},
+ut.plotDF(pd.DataFrame(merchantPrices['priceRangePercent']).iloc[-20:,]
+          , {'kind': 'barh', 'legend': None},
           {
-              'ylabel': 'Store',
-              'xlabel': 'Average Price',
-              'title': 'Stores with highest Price Variation',
-              'savefig': barDir + 'Store Prices by Variation.png'},
+              'ylabel': 'Merchant',
+              'xlabel': 'Ratio between minPrice and maxPrice',
+              'title': 'Merchant with highest Price Variation',
+              'savefig': barDir + 'Merchant Prices by Variation.png'},
           removeOutliersBeforePlotting=False)
 
+data['prices.merchant'].replace({'Best Buy': 'Bestbuy.com'}, inplace=True)
+minPrices = data.groupby('id')[['meanPrice', 'prices.merchant']].min()
+maxPrices = data.groupby('id')[['meanPrice', 'prices.merchant']].max()
+
+priceVariations = pd.DataFrame()
+priceVariations['minPrice'] = minPrices['meanPrice']
+priceVariations['maxPrice'] = maxPrices['meanPrice']
+priceVariations['minMerchant'] = minPrices['prices.merchant']
+priceVariations['maxMerchant'] = maxPrices['prices.merchant']
+
+bestMerchants = priceVariations.groupby('minMerchant')['minPrice'].count().sort_values(ascending=True)
+bestMerchantsTotal = bestMerchants.sum()
+bestMerchantsPercent = bestMerchants / bestMerchantsTotal
+
+bestMerchants = pd.DataFrame(bestMerchants)
+bestMerchantsPercent = pd.DataFrame(bestMerchantsPercent)
+
+ut.plotDF(bestMerchants.iloc[-20:,]
+          , {'kind': 'barh', 'stacked':False, 'legend': None},
+          {
+              'ylabel': 'Merchant',
+              'xlabel': '# of Products with Lowest Price',
+              'title': 'Merchants with Lowest Prices',
+              'savefig': barDir + 'Best Merchant Prices.png'},
+          removeOutliersBeforePlotting=False)
+
+ut.plotDF(bestMerchantsPercent.iloc[-20:,]
+          , {'kind': 'barh', 'stacked':False, 'legend': None},
+          {
+              'ylabel': 'Merchant',
+              'xlabel': '% of Products with Lowest Price',
+              'title': 'Merchants with Lowest Prices',
+              'savefig': barDir + 'Best Merchant Prices By Percent.png'},
+          removeOutliersBeforePlotting=False)
+merchantCounts = pd.DataFrame(data['prices.merchant'].value_counts()).sort_values(by = 'prices.merchant',ascending=True)
+
+ut.print_full(merchantCounts)
+ut.plotDF(merchantCounts[-20:]
+          , {'kind': 'barh', 'legend': None},
+          {
+              'ylabel': 'Merchant',
+              'xlabel': '# of Products Merchant Sells',
+              'title': 'Merchant Counts',
+              'savefig': barDir + 'Merchant Product Counts.png'},
+          removeOutliersBeforePlotting=False)
+
+merchantCounts['prices.merchant'] = merchantCounts['prices.merchant'] / merchantCounts['prices.merchant'].sum()
+ut.plotDF(merchantCounts[-20:]
+          , {'kind': 'barh', 'legend': None},
+          {
+              'ylabel': 'Merchant',
+              'xlabel': '% of Products Merchant Sells',
+              'title': 'Merchant Counts',
+              'savefig': barDir + 'Merchant Product Count Ratios .png'},
+          removeOutliersBeforePlotting=False)
 
 print('finished')
